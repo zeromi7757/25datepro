@@ -1,61 +1,24 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.express as px
 
-st.title("대한민국 연령별 인구 구조 시각화")
+# 파일 업로드 (또는 로컬 CSV 로드)
+uploaded_file = st.file_uploader("CSV 파일을 업로드하세요", type=["csv"])
 
-# CSV 파일 경로 (루트 폴더 기준)
-file_path = '202505_202505_연령별인구현황_월간.csv'
+if uploaded_file is not None:
+    # CSV 읽기
+    df = pd.read_csv(uploaded_file, encoding='cp949')  # 인코딩은 파일에 따라 조정 (cp949, utf-8 등)
+    st.write("데이터 미리보기:", df.head())
 
-# CSV 읽기
-try:
-    df = pd.read_csv(file_path, encoding='cp949', engine='python')
-except Exception as e:
-    st.error(f"CSV 파일을 읽는 데 문제가 발생했습니다: {e}")
-    st.stop()
+    # 열 정보 출력
+    st.write("열 정보:", df.columns.tolist())
 
-# 파일 구조 확인 및 기본 전처리
-if '행정구역' not in df.columns:
-    st.error("파일에 '행정구역' 컬럼이 없습니다. 올바른 파일을 업로드했는지 확인해주세요.")
-    st.stop()
+    # 예: 특정 열 선택해서 시각화하기
+    # 사용자가 선택하도록 설정
+    x_axis = st.selectbox("X축 열 선택", df.columns)
+    y_axis = st.selectbox("Y축 열 선택", df.columns)
 
-# 지역 선택
-regions = df['행정구역'].unique()
-selected_region = st.selectbox("지역을 선택하세요", regions)
-
-region_data = df[df['행정구역'] == selected_region]
-
-# 연령별 컬럼만 추출 (예: '0세', '1세', ..., '100세 이상')
-age_columns = [col for col in df.columns if ('세' in col or '이상' in col) and col != '총인구수']
-
-# 최근 데이터 한 건만 사용 (보통 가장 마지막 월 기준)
-latest_data = region_data.iloc[-1]
-
-# 연령과 인구수 데이터 준비
-ages = []
-populations = []
-for age_col in age_columns:
-    age_label = age_col.replace('세','').replace('이상','+')
-    try:
-        population = int(str(latest_data[age_col]).replace(",", "").strip())
-    except:
-        population = 0
-    ages.append(age_label)
-    populations.append(population)
-
-# 인구 피라미드 그리기
-fig = go.Figure(go.Bar(
-    x=populations,
-    y=ages,
-    orientation='h',
-    marker=dict(color='skyblue')
-))
-
-fig.update_layout(
-    title=f"{selected_region} 인구 피라미드 (최신월)",
-    xaxis_title="인구수",
-    yaxis_title="연령",
-    height=800
-)
-
-st.plotly_chart(fig)
+    fig = px.line(df, x=x_axis, y=y_axis, title=f"{y_axis} vs {x_axis}")
+    st.plotly_chart(fig)
+else:
+    st.info("CSV 파일을 업로드해주세요.")
