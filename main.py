@@ -1,24 +1,43 @@
+# app.py
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 파일 업로드 (또는 로컬 CSV 로드)
-uploaded_file = st.file_uploader("CSV 파일을 업로드하세요", type=["csv"])
+st.title("연령별 인구현황 시각화")
+
+# CSV 업로드
+uploaded_file = st.file_uploader("CSV 파일을 업로드하세요", type="csv")
 
 if uploaded_file is not None:
-    # CSV 읽기
-    df = pd.read_csv(uploaded_file, encoding='cp949')  # 인코딩은 파일에 따라 조정 (cp949, utf-8 등)
-    st.write("데이터 미리보기:", df.head())
+    # 파일 읽기 (한글 CSV는 euc-kr 권장)
+    df = pd.read_csv(uploaded_file, encoding='euc-kr')
+    
+    # 컬럼 이름 정리
+    df.columns = df.columns.str.strip()
+    
+    # 숫자 컬럼 쉼표 제거 + 숫자형 변환
+    for col in df.columns[1:]:
+        df[col] = df[col].astype(str).str.replace(",", "").astype(int)
 
-    # 열 정보 출력
-    st.write("열 정보:", df.columns.tolist())
+    # 연령 컬럼만 추출
+    age_cols = [col for col in df.columns if "세" in col or "이상" in col]
 
-    # 예: 특정 열 선택해서 시각화하기
-    # 사용자가 선택하도록 설정
-    x_axis = st.selectbox("X축 열 선택", df.columns)
-    y_axis = st.selectbox("Y축 열 선택", df.columns)
+    # 행정구역 선택
+    region = st.selectbox("행정구역을 선택하세요", df["행정구역"].unique())
 
-    fig = px.line(df, x=x_axis, y=y_axis, title=f"{y_axis} vs {x_axis}")
+    # 선택한 행정구역 데이터
+    region_data = df[df["행정구역"] == region][age_cols].T.reset_index()
+    region_data.columns = ["연령", "인구수"]
+
+    # 연령 컬럼 정리
+    region_data["연령"] = region_data["연령"].str.extract(r'(\d+)').astype(int)
+
+    # Plotly 시각화
+    fig = px.bar(region_data, x="연령", y="인구수",
+                 labels={"연령": "연령(세)", "인구수": "인구수"},
+                 title=f"{region} 연령별 인구 분포")
+
     st.plotly_chart(fig)
-else:
-    st.info("CSV 파일을 업로드해주세요.")
+
+    st.dataframe(region_data)
