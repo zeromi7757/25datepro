@@ -7,7 +7,7 @@ import plotly.express as px
 st.title("연령별 인구현황 시각화")
 
 # ✅ 로컬 CSV 파일 경로 지정 (업로드 아님!)
-FILE_PATH = "202505_202505_연령별인구현황_월간.csv"
+FILE_PATH = "202505_202505_연령별인구현황_월간 (1).csv"
 
 # CSV 읽기 (한글 CSV는 euc-kr 권장)
 try:
