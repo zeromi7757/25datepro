@@ -1,38 +1,33 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import koreanize_matplotlib  # 한글 깨짐 방지
+import koreanize_matplotlib
+import re
 
-# 페이지 설정
 st.set_page_config(page_title="🗺️ 지역별 인구 구조 대시보드", layout="wide")
 
-# -------------------------------
-# 📥 데이터 로드
-# -------------------------------
 @st.cache_data
 def load_data() -> tuple[pd.DataFrame, list, list]:
-    """
-    CSV를 읽고 필요한 컬럼 정리 및 연령 레이블 반환 (숫자)
-    """
     df = pd.read_csv("/mnt/data/202505_202505_연령별인구현황_월간 (1).csv", encoding="cp949")
     df["지역"] = df["행정구역"].str.split("(").str[0].str.strip()
 
-    # 연령별 컬럼만 필터링
     age_cols = [col for col in df.columns if "_계_" in col and (col.endswith("세") or "이상" in col)]
 
-    # '2025년_계_0세' → 숫자만 추출 (0, 1, ..., 100)
+    # ✅ 정규표현식으로 안전 추출
     age_labels = []
     for col in age_cols:
-        num = "".join(filter(str.isdigit, col.split("_")[-1]))
-        if num == "":
-            num = "100"  # '100세 이상'
-        age_labels.append(int(num))
+        match = re.search(r"(\d+)", col.split("_")[-1])
+        if match:
+            age = int(match.group(1))
+        else:
+            age = 100
+        age_labels.append(age)
 
-    # 콤마 제거 후 숫자로 변환
     for col in age_cols:
         df[col] = df[col].astype(str).str.replace(",", "", regex=False).astype(int)
 
     return df, age_cols, age_labels
+
 
 # -------------------------------
 # 🧩 UI 요소
