@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import koreanize_matplotlib  # 한글 깨짐 방지
+import plotly.express as px  # 한글 깨짐 방지
 import re
 
 # -------------------------------
