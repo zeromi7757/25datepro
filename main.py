@@ -1,14 +1,25 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import re
+import re  # 안전한 숫자 추출
 
-st.set_page_config(page_title="🗺️ 지역별 인구 구조 대시보드", layout="wide")
+# -------------------------------
+# 📌 페이지 설정
+# -------------------------------
+st.set_page_config(
+    page_title="🗺️ 지역별 인구 구조 대시보드",
+    layout="wide"
+)
 
+# -------------------------------
+# 📥 파일 업로드 + 전처리
+# -------------------------------
 @st.cache_data
-def load_data():
-    # ✅ 상대경로 사용 (같은 폴더에 CSV 있어야 함!)
-    df = pd.read_csv("202505_202505_연령별인구현황_월간.csv", encoding="cp949")
+def load_data(uploaded_file) -> tuple[pd.DataFrame, list, list]:
+    """
+    업로드된 CSV를 읽고 컬럼 정리 + 연령 라벨 추출
+    """
+    df = pd.read_csv(uploaded_file, encoding="cp949")
     df["지역"] = df["행정구역"].str.split("(").str[0].str.strip()
 
     age_cols = [col for col in df.columns if "_계_" in col and (col.endswith("세") or "이상" in col)]
@@ -26,10 +37,6 @@ def load_data():
         df[col] = df[col].astype(str).str.replace(",", "", regex=False).astype(int)
 
     return df, age_cols, age_labels
-
-# ----------- 이하 동일 ----------
-# (앞서 드린 꺾은선/막대/피라미드 부분 유지)
-
 
 # -------------------------------
 # 🌐 Streamlit UI
